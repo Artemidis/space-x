@@ -25,8 +25,11 @@ RUN composer install --no-dev --optimize-autoloader
 # Установка Node-зависимостей и билд фронта
 RUN npm install && npm run build
 
-# Генерация ключа (если APP_KEY пуст)
+# Генерация APP_KEY, если отсутствует
 RUN php artisan key:generate --force || true
+
+# Выполняем миграции перед запуском
+RUN php artisan migrate --force || true
 
 # Указываем порт
 EXPOSE 10000
