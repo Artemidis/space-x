@@ -1,26 +1,38 @@
-FROM php:8.2-fpm
+FROM php:8.2-cli
 
-# Установка зависимостей
+# Устанавливаем системные зависимости
 RUN apt-get update && apt-get install -y \
-    libpq-dev \
     git \
     unzip \
+    libpq-dev \
+    libzip-dev \
     zip \
-    && docker-php-ext-install pdo pdo_pgsql
+    curl \
+    npm \
+    && docker-php-ext-install pdo pdo_pgsql zip
 
-# Установка Composer
+# Устанавливаем Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
+
+# Копируем файлы проекта
 COPY . .
 
-# Установка зависимостей Laravel
+# Установка PHP-зависимостей
 RUN composer install --no-dev --optimize-autoloader
 
-# Копируем скрипт старта
-COPY start.sh /start.sh
-RUN chmod +x /start.sh
+# Установка Node-зависимостей и билд фронта
+RUN npm install && npm run build
 
-EXPOSE 80
+# Генерация APP_KEY, если отсутствует
+RUN php artisan key:generate --force || true
 
-CMD ["/start.sh"]
+# Выполняем миграции перед запуском
+RUN php artisan migrate --force
+
+# Указываем порт
+EXPOSE 10000
+
+# Старт приложения
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=10000"]
