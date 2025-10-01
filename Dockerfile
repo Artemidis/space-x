@@ -1,38 +1,20 @@
-FROM php:8.2-cli
+FROM richarvey/nginx-php-fpm:3.1.6
 
-# Устанавливаем системные зависимости
-RUN apt-get update && apt-get install -y \
-    git \
-    unzip \
-    libpq-dev \
-    libzip-dev \
-    zip \
-    curl \
-    npm \
-    && docker-php-ext-install pdo pdo_pgsql zip
-
-# Устанавливаем Composer
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
-
-WORKDIR /var/www/html
-
-# Копируем файлы проекта
 COPY . .
 
-# Установка PHP-зависимостей
-RUN composer install --no-dev --optimize-autoloader
+# Image config
+ENV SKIP_COMPOSER 1
+ENV WEBROOT /var/www/html/public
+ENV PHP_ERRORS_STDERR 1
+ENV RUN_SCRIPTS 1
+ENV REAL_IP_HEADER 1
 
-# Установка Node-зависимостей и билд фронта
-RUN npm install && npm run build
+# Laravel config
+ENV APP_ENV production
+ENV APP_DEBUG false
+ENV LOG_CHANNEL stderr
 
-# Генерация APP_KEY, если отсутствует
-RUN php artisan key:generate --force || true
+# Allow composer to run as root
+ENV COMPOSER_ALLOW_SUPERUSER 1
 
-# Выполняем миграции перед запуском
-RUN php artisan migrate --force
-
-# Указываем порт
-EXPOSE 10000
-
-# Старт приложения
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=10000"]
+CMD ["/start.sh"]
