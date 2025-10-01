@@ -29,7 +29,7 @@ RUN npm install && npm run build
 RUN php artisan key:generate --force || true
 
 # Выполняем миграции перед запуском
-RUN php artisan migrate --force || true
+RUN php artisan migrate --force
 
 # Указываем порт
 EXPOSE 10000
