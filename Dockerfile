@@ -31,5 +31,8 @@ RUN php artisan migrate --force
 COPY start.sh /start.sh
 RUN chmod +x /start.sh
 
+# Указываем Render, что контейнер слушает порт 80
+EXPOSE 80
+
 # Команда по умолчанию
 CMD ["/start.sh"]
