@@ -1,22 +1,26 @@
-# Базовый образ PHP-FPM + Nginx
-FROM richarvey/nginx-php-fpm:3.1.6
+FROM php:8.2-fpm
 
-# Копируем весь проект
-COPY . /var/www/html
+# Установка зависимостей
+RUN apt-get update && apt-get install -y \
+    libpq-dev \
+    git \
+    unzip \
+    zip \
+    && docker-php-ext-install pdo pdo_pgsql
 
-# Устанавливаем переменные окружения Laravel
-ENV APP_ENV=production \
-    APP_DEBUG=false \
-    LOG_CHANNEL=stderr \
-    WEBROOT=/var/www/html/public \
-    PHP_ERRORS_STDERR=1 \
-    COMPOSER_ALLOW_SUPERUSER=1
+# Установка Composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Expose порт, который Render будет слушать
+WORKDIR /var/www/html
+COPY . .
+
+# Установка зависимостей Laravel
+RUN composer install --no-dev --optimize-autoloader
+
+# Копируем скрипт старта
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
+
 EXPOSE 80
 
-# Делаем start.sh исполняемым
-RUN chmod +x /var/www/html/start.sh
-
-# CMD: выполняем миграции/кеширование, затем nginx в foreground
-CMD ["/bin/bash", "-c", "/var/www/html/start.sh && nginx -g 'daemon off;'"]
+CMD ["/start.sh"]
